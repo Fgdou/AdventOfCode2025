@@ -21,8 +21,41 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(poses)
 }
 
-pub fn part_two(input: &str) -> Option<u64> {
-    None
+fn remove_accessibles(input: &Input) -> (Input, usize) {
+    let mut count = 0;
+    let map = input.iter().enumerate().map(|(y, row)| {
+        row.iter().enumerate().map(|(x, c)| {
+            if *c != '@' {
+                *c
+            } else if surrounded_by(input, x as i32, y as i32) < 4 {
+                count += 1;
+                '.'
+            } else {
+                '@'
+            }
+        }).collect()
+    }).collect();
+
+    (map, count)
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let mut input = parse(input);
+    let mut total_removed = 0;
+
+    loop {
+        let res = remove_accessibles(&input);
+        input = res.0;
+        let count = res.1;
+        if count == 0 {
+            break;
+        }
+        total_removed += count;
+
+        println!("{}", total_removed)
+    }
+
+    Some(total_removed)
 }
 
 type Input = Vec<Vec<char>>;
@@ -68,7 +101,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(43));
     }
 
     #[test]
