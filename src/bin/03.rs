@@ -5,7 +5,6 @@ pub fn part_one(input: &str) -> Option<u64> {
     let input = parse(input);
     let res = input.iter()
         .map(|list| find_n_biggest(list, 2))
-        .map(|list| {dbg!(&list); list})
         .map(|list| list.into_iter().fold(0, |acc, item| item as u64 + acc*10))
         .sum();
     Some(res)
@@ -15,7 +14,6 @@ pub fn part_two(input: &str) -> Option<u64> {
     let input = parse(input);
     let res = input.iter()
         .map(|list| find_n_biggest(list, 12))
-        .map(|list| {dbg!(&list); list})
         .map(|list| list.into_iter().fold(0, |acc, item| item as u64 + acc*10))
         .sum();
     Some(res)
@@ -42,7 +40,6 @@ fn find_n_biggest(numbers: &Vec<u32>, n: usize) -> Vec<u32> {
     let mut start_index = 0;
 
     for i in 1..=n {
-        dbg!(&i, &start_index);
         let max = numbers[start_index..numbers.len()+i-n].iter().enumerate().rev().max_by_key(|item| item.1);
 
         match max {
