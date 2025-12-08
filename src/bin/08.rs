@@ -50,6 +50,12 @@ impl Graph {
         }).collect()
     }
 
+    pub fn get_first_graph_size(&self) -> usize {
+        let pos = self.graphs.keys().next().unwrap();
+        let mut visited = HashSet::new();
+        self.visit(*pos, &mut visited).len()
+    }
+
     fn visit(&self, pos: Vector3<usize>, visited: &mut HashSet<Vector3<usize>>) -> HashSet<Vector3<usize>> {
         if visited.contains(&pos) {
             return HashSet::new();
@@ -109,20 +115,22 @@ pub fn part_two(input: &str) -> Option<usize> {
 
     let mut history = None;
 
+    let mut graph_size = 0;
+
     loop {
-        let l = graph.get_graphs().iter().len();
-        if l == 1 {
+        if graph_size == input.len() {
             break;
         }
         let next = distances.pop();
 
-        println!("{} {}", distances.len(), l);
+        // println!("{} {}", distances.len(), graph_size);
 
         match next {
             None => break,
             Some(next) => {
                 if graph.connect(next.0, next.1) {
                     history = Some(next);
+                    graph_size = graph.get_first_graph_size();
                 }
             }
         }
