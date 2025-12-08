@@ -11,7 +11,10 @@ struct Graph {
 }
 
 impl Graph {
-    pub fn connect(&mut self, v1: Vector3<usize>, v2: Vector3<usize>) {
+    pub fn connect(&mut self, v1: Vector3<usize>, v2: Vector3<usize>) -> bool {
+        if self.are_connected(&v1, &v2) {
+            return false;
+        }
         if let Some(v) = self.graphs.get_mut(&v1) {
             v.insert(v2.clone());
         } else {
@@ -22,6 +25,12 @@ impl Graph {
         } else {
             self.graphs.insert(v2, HashSet::from([v1]));
         }
+        true
+    }
+
+    pub fn are_connected(&self, v1: &Vector3<usize>, v2: &Vector3<usize>) -> bool {
+        let mut visited = HashSet::new();
+        self.visit(v1.clone(), &mut visited).contains(v2)
     }
 
     pub fn new(vecs: &HashSet<Vector3<usize>>) -> Self {
@@ -90,8 +99,36 @@ fn calculate_product(graphs: &Vec<HashSet<Vector3<usize>>>) -> usize {
     graphs[0..3].iter().map(|g| g.len()).product()
 }
 
-pub fn part_two(input: &str) -> Option<u64> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let input = parse(input);
+    let mut distances = calculate_distance(&input);
+    let mut graph = Graph::new(&input);
+
+    distances.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+    distances.reverse();
+
+    let mut history = None;
+
+    loop {
+        let l = graph.get_graphs().iter().len();
+        if l == 1 {
+            break;
+        }
+        let next = distances.pop();
+
+        println!("{} {}", distances.len(), l);
+
+        match next {
+            None => break,
+            Some(next) => {
+                if graph.connect(next.0, next.1) {
+                    history = Some(next);
+                }
+            }
+        }
+    };
+
+    history.map(|h| h.0[0] * h.1[0])
 }
 
 type Input = HashSet<Vector3<usize>>;
@@ -140,7 +177,7 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(25272));
     }
 
     #[test]
@@ -159,5 +196,16 @@ mod tests {
             HashSet::from([[2, 2, 2], [2, 2, 3]]),
             HashSet::from([[1, 1, 1], [1, 1, 2]]),
         ), graph.get_graphs())
+    }
+
+    #[test]
+    fn test_connected() {
+        let mut graph = Graph::new(&HashSet::new());
+
+        graph.connect([1, 1, 1], [1, 1, 2]);
+        graph.connect([2, 2, 2], [2, 2, 3]);
+
+        assert_eq!(false, graph.are_connected(&[1, 1, 1], &[2, 2, 2]));
+        assert_eq!(true, graph.are_connected(&[1, 1, 1], &[1, 1, 2]));
     }
 }
