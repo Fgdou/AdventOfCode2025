@@ -7,10 +7,17 @@ advent_of_code::solution!(12);
 
 pub fn part_one(input: &str) -> Option<usize> {
     let input = parse(input);
-    let res = input.trees.iter().enumerate().filter(|(i, tree)| {
-        let res = try_fit(&mut HashSet::new(), tree.indexes.clone(), &input.presents, &tree.size, [0,0]);
-        println!("{} {}", i, res);
-        res
+
+    let res = input.trees.iter().filter(|tree| {
+        let pixels_needed: usize = tree.indexes.iter().enumerate().map(|(i, n)| n* input.presents.get(&i).unwrap().len()).sum();
+        let size = tree.size[0] * tree.size[1];
+
+        if pixels_needed > size {
+            return false;
+        }
+
+        let number_of_shapes: usize = tree.indexes.iter().sum();
+        number_of_shapes <= tree.size[0]/3 * tree.size[1]/3
     }).count();
 
     Some(res)
@@ -65,168 +72,6 @@ fn parse(input: &str) -> Input {
         presents,
         trees,
     }
-}
-
-fn rotate(tree: HashSet<Vector2<usize>>) -> HashSet<Vector2<usize>> {
-    tree.into_iter().map(|p| {
-        match p {
-            [0, 0] => [2, 0],
-            [1, 0] => [2, 1],
-            [2, 0] => [2, 2],
-            [2, 1] => [1, 2],
-            [2, 2] => [0, 2],
-            [1, 2] => [0, 1],
-            [0, 2] => [0, 0],
-            [0, 1] => [1, 0],
-            _ => p
-        }
-    }).collect()
-}
-
-fn flip_x(tree: HashSet<Vector2<usize>>) -> HashSet<Vector2<usize>> {
-    tree.into_iter().map(|p| [p[0], flip_n(p[1])]).collect()
-}
-
-fn flip_y(tree: HashSet<Vector2<usize>>) -> HashSet<Vector2<usize>> {
-    tree.into_iter().map(|p| [flip_n(p[0]), p[1]]).collect()
-}
-
-fn flip_n(n: usize) -> usize {
-    match n {
-        0 => 2,
-        2 => 0,
-        _ => n,
-    }
-}
-
-fn does_fit_pos(grid: &HashSet<Vector2<usize>>, mut present: HashSet<Vector2<usize>>, size: &Vector2<usize>, start_pos: &Vector2<usize>) -> Option<HashSet<Vector2<usize>>> {
-    if start_pos[0]+3 > size[0] || start_pos[1]+3 > size[1] {
-        return None;
-    }
-
-    for i in 0..4 {
-        if i > 0 {
-            present = rotate(present);
-        }
-
-        let tests = vec!(
-            present.clone(),
-            flip_x(present.clone()),
-            flip_y(present.clone()),
-        );
-
-        for present in tests {
-            let all_fit = present.iter().all(|pos| {
-                let pos = vec2_add(pos.clone(), start_pos.clone());
-                !grid.contains(&pos)
-            });
-            if all_fit {
-                return Some(present);
-            }
-        }
-    }
-    None
-}
-
-struct Size {
-    size: usize,
-    state: usize
-}
-
-impl Size {
-    pub fn new(size: usize) -> Self {
-        Self {
-            size,
-            state: 0,
-        }
-    }
-}
-
-impl Iterator for Size {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let state = self.state;
-        if self.state % 3 == 0 {
-            self.state += 3;
-
-            if self.state >= self.size {
-                self.state = 1;
-            }
-
-            Some(state)
-        } else {
-            if self.state % 3 == 1 {
-                self.state += 1;
-            } else {
-                self.state += 2;
-            }
-
-            if state >= self.size {
-                None
-            } else {
-                Some(state)
-            }
-        }
-    }
-}
-
-fn try_fit(grid: &mut HashSet<Vector2<usize>>, mut presents_left: Vec<usize>, presents: &HashMap<usize, HashSet<Vector2<usize>>>, size: &Vector2<usize>, mut start_pos: Vector2<usize>) -> bool {
-    // dbg!(&presents_left, start_pos);
-    // print_grid(grid, size);
-    if presents_left.iter().all(|p| *p == 0) {
-        return true;
-    }
-
-    for (i, n) in presents_left.clone().iter().enumerate() {
-        if *n == 0 {
-            continue;
-        }
-
-        let present = presents.get(&i).unwrap();
-        loop {
-            if let Some(present) = does_fit_pos(grid, present.clone(), size, &start_pos) {
-                *presents_left.get_mut(i).unwrap() -= 1;
-                present.iter().for_each(|p| {grid.insert(vec2_add(*p,start_pos));});
-
-                let mut start_pos2 = start_pos.clone();
-                if start_pos2[1] > 0 {
-                    start_pos2[1] -= 1;
-                }
-                start_pos2[0] += 1;
-
-                let res = try_fit(grid, presents_left.clone(), presents, size, start_pos2);
-                *presents_left.get_mut(i).unwrap() += 1;
-                present.iter().for_each(|p| {grid.remove(&vec2_add(*p,start_pos));});
-
-                return res;
-            }
-
-            start_pos[0] += 1;
-            if start_pos[0] >= size[0] {
-                start_pos[0] = 0;
-                start_pos[1] += 1;
-            }
-            if start_pos[1] >= size[1] {
-                return false;
-            }
-        }
-    }
-    false
-}
-
-fn print_grid(grid: &HashSet<Vector2<usize>>, size: &Vector2<usize>) {
-    for y in 0..size[1] {
-        for x in 0..size[0] {
-            if grid.contains(&[x, y]) {
-                print!("#");
-            } else {
-                print!(".");
-            }
-        }
-        println!();
-    }
-    println!();
 }
 
 #[cfg(test)]
